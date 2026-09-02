@@ -277,7 +277,7 @@ a{color:inherit;text-decoration:none}
   <img id="modalImg" alt="拡大画像">
 </div>
 
-<script src="config.js?v=2"></script>
+<script src="config.js?v=3"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const defaults = [
@@ -417,7 +417,7 @@ function renderAll(){renderFilters();renderPublic();renderAdmin();}
 
 async function handleAdminAction(action,id){
   if(!isAdmin()) return;
-  const idx=works.findIndex(w=>w.id===id); if(idx<0) return;
+  const idx=works.findIndex(w=>String(w.id)===String(id)); if(idx<0) return;
   if(action==='edit'){startEdit(works[idx]);return;}
   if(action==='delete'){
     if(!confirm('この作品を削除しますか？')) return;
@@ -494,7 +494,7 @@ async function uploadPendingImage(){
 form.addEventListener('submit',async e=>{
   e.preventDefault();
   if(!isAdmin()){setTextStatus('formStatus','管理者としてログインしてください。','error');return;}
-  const existing=works.find(w=>w.id===editId.value);
+  const existing=works.find(w=>String(w.id)===String(editId.value));
   if(!existing && !pendingImageBlob){setTextStatus('formStatus','画像を選択してください。','error');return;}
   const title=document.getElementById('titleInput').value.trim();
   if(!title){setTextStatus('formStatus','作品名を入力してください。','error');return;}
