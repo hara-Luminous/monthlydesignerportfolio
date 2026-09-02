@@ -1,113 +1,46 @@
-# PORTFOLIO ARCHIVE - Supabase 共通管理版
+# 月別ポートフォリオ / GitHub Pages 用
 
-この版では、管理画面から追加・編集した作品を **Supabase Database / Storage** に保存します。
-そのため、同じサイトを見ている別PC・スマホ・別ブラウザにも共通で反映されます。
+このフォルダは新しい月別ポートフォリオ専用です。
+既存ページの `portfolio_works` とは分離し、新ページは `monthly_portfolio_works` を使用します。
+画像保存先も既存の `portfolio` ではなく `monthly-portfolio` を使用します。
 
-## 変更点
+## 今回すでに完了していること
+Supabase SQL Editor で新ページ専用テーブル・RLS・Storage・Realtime の設定を実行済みなら、`supabase_setup.sql` は再実行不要です。
 
-- `localStorage` 保存を廃止
-- 作品情報 → Supabase Database
-- 追加画像 → Supabase Storage
-- 管理画面 → Supabase Authでログイン必須
-- 公開作品 → 誰でも閲覧可能
-- 非公開作品・追加/編集/削除 → 管理者のみ
-- Realtime → 他端末にも自動同期
+## GitHub に置くファイル
+リポジトリの一番上に次を置いてください。
 
-## 1. Supabaseプロジェクトを作成
+- `index.html`
+- `config.js`
+- `.nojekyll`
+- `assets/`
+- `README.md`
+- `supabase_setup.sql`（保管用。実行済みなら再実行不要）
 
-Supabaseで新しいProjectを作成します。
+`index.html` は必ずリポジトリ直下に置きます。
 
-## 2. SQLを実行
-
-Supabase Dashboard の **SQL Editor** を開き、同梱の `supabase_setup.sql` 全体を貼り付けて実行してください。
-
-これで以下が作成されます。
-
-- `portfolio_works` テーブル
-- `portfolio` Storage bucket
-- 公開閲覧 / 管理者編集用のRLS policy
-- 初期3作品
-- Realtime設定
-
-## 3. 管理者アカウントを作成
-
-Supabase Dashboard の Authentication から管理用ユーザーを1人作成します。
-
-その後 `supabase_setup.sql` の一番下にある次のSQLのコメントを外し、メールアドレスを書き換えてSQL Editorで実行してください。
-
-```sql
-update auth.users
-set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"portfolio_admin": true}'::jsonb
-where email = 'YOUR_ADMIN_EMAIL';
-```
-
-`YOUR_ADMIN_EMAIL` を作成した管理者のメールアドレスに変更します。
-
-管理者権限を付けたあと、すでにログインしている場合はいったんログアウトして再ログインしてください。
-
-### セキュリティ上のおすすめ
-
-このサイトには新規登録画面を用意していません。Supabase側でも不要なら一般ユーザーの新規サインアップを無効にして、管理者ユーザーだけをDashboardから作る運用がおすすめです。
-
-## 4. `config.js` を設定
-
-Supabase Dashboard の Project Settings / API で確認できる値を `config.js` に入れます。
+## config.js
+前のポートフォリオと同じ Supabase プロジェクトを使うため、前ページで使っている Project URL と anon key を `config.js` に設定できます。
 
 ```js
 window.PORTFOLIO_SUPABASE = {
   url: 'https://xxxxxxxx.supabase.co',
-  anonKey: 'xxxxxxxxxxxxxxxx'
+  anonKey: 'xxxxxxxx'
 };
 ```
 
-**重要:** `service_role` key は絶対に入れないでください。ブラウザに入れるのは anon / publishable key だけです。
+`service_role` キーは絶対に GitHub に置かないでください。
 
-## 5. GitHub Pagesへアップロード
+## 管理画面
+公開URLの末尾に `#admin` を付けると管理画面を開けます。
+例: `https://example.github.io/repository/#admin`
 
-このフォルダの中身をGitHubリポジトリ直下へアップロードします。
+前ページで `portfolio_admin: true` を設定済みのSupabase Authユーザーは、その管理者設定をこの新ページでも利用できます。
 
-```text
-.nojekyll
-index.html
-config.js
-supabase_setup.sql
-README.md
-assets/
-```
+## 新ページのデータ保存先
+- テーブル: `public.monthly_portfolio_works`
+- Storage: `monthly-portfolio`
+- 制作月: `work_month`（1〜12）
+- テイストカテゴリ: `category`（かわいい、高級感、ネオン等）
 
-GitHubの `Settings` → `Pages` で、Branchを `main`、Folderを `/(root)` にして公開します。
-
-## 6. 管理画面の使い方
-
-公開URLの右上にある **管理画面** を押します。
-
-1. 管理者メールアドレス・パスワードでログイン
-2. 作品画像を選択
-3. 作品名 / カテゴリー / タグ / 備考を入力
-4. `保存する`
-5. 公開サイトへ反映
-
-追加画像はブラウザで長辺1600pxまで圧縮してからStorageへアップロードします。
-
-## ファイル構成
-
-- `index.html` : 公開サイト + 管理画面
-- `config.js` : Supabase接続設定
-- `supabase_setup.sql` : DB / Storage / RLS / Realtime 初期設定
-- `assets/` : 初期3作品画像
-- `.nojekyll` : GitHub Pages用
-- `README.md` : この手順
-
-## 補足
-
-`config.js` 未設定の状態では、公開画面は同梱の初期3作品を表示します。
-管理画面の共通保存機能はSupabase設定完了後に有効になります。
-
-
-## 月別表示アップデート（2026-09）
-
-この版では、従来の「かわいい」「高級感」などのカテゴリーを残したまま、作品ごとに「制作月（1〜12月）」を保存できるようになっています。
-
-既にSupabaseを設定済みの場合も、**更新後の `supabase_setup.sql` をSQL Editorで実行してください。** `work_month` カラムが追加され、既存作品には `created_at` の月が自動設定されます。既存データや画像は削除されません。
-
-管理画面では作品の追加・編集時に「制作月」を選択します。公開画面では「MONTH」と「STYLE」を同時に絞り込めます。
+月とカテゴリは別項目なので、「9月 × 高級感」のような絞り込みができます。

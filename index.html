@@ -319,7 +319,7 @@ function setBusy(busy){
 
 async function fetchWorks(){
   if(!configured){ works=structuredClone(defaults); renderAll(); return; }
-  const {data,error}=await sb.from('portfolio_works').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true});
+  const {data,error}=await sb.from('monthly_portfolio_works').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:true});
   if(error){
     console.error(error);
     if(!works.length) works=structuredClone(defaults);
@@ -423,8 +423,8 @@ async function handleAdminAction(action,id){
     if(!confirm('この作品を削除しますか？')) return;
     setBusy(true);
     const target=works[idx];
-    const {error}=await sb.from('portfolio_works').delete().eq('id',id);
-    if(!error && target.storage_path) await sb.storage.from('portfolio').remove([target.storage_path]);
+    const {error}=await sb.from('monthly_portfolio_works').delete().eq('id',id);
+    if(!error && target.storage_path) await sb.storage.from('monthly-portfolio').remove([target.storage_path]);
     setBusy(false);
     if(error){setTextStatus('formStatus','削除に失敗しました：'+error.message,'error');return;}
     setTextStatus('formStatus','削除しました。','ok');
@@ -438,8 +438,8 @@ async function handleAdminAction(action,id){
     const bOrder=Number.isFinite(b.sort_order)?b.sort_order:other;
     setBusy(true);
     const [r1,r2]=await Promise.all([
-      sb.from('portfolio_works').update({sort_order:bOrder}).eq('id',a.id),
-      sb.from('portfolio_works').update({sort_order:aOrder}).eq('id',b.id)
+      sb.from('monthly_portfolio_works').update({sort_order:bOrder}).eq('id',a.id),
+      sb.from('monthly_portfolio_works').update({sort_order:aOrder}).eq('id',b.id)
     ]);
     setBusy(false);
     const err=r1.error||r2.error;
@@ -485,9 +485,9 @@ async function uploadPendingImage(){
   if(!pendingImageBlob) return null;
   const safe=(imageInput.files?.[0]?.name||'image').replace(/\.[^.]+$/,'').replace(/[^a-zA-Z0-9_-]+/g,'-').slice(0,50)||'image';
   const path=`works/${Date.now()}-${Math.random().toString(36).slice(2,8)}-${safe}.jpg`;
-  const {error}=await sb.storage.from('portfolio').upload(path,pendingImageBlob,{contentType:'image/jpeg',cacheControl:'3600',upsert:false});
+  const {error}=await sb.storage.from('monthly-portfolio').upload(path,pendingImageBlob,{contentType:'image/jpeg',cacheControl:'3600',upsert:false});
   if(error) throw error;
-  const {data}=sb.storage.from('portfolio').getPublicUrl(path);
+  const {data}=sb.storage.from('monthly-portfolio').getPublicUrl(path);
   return {path,url:data.publicUrl};
 }
 
@@ -513,21 +513,21 @@ form.addEventListener('submit',async e=>{
     };
     if(uploaded){payload.image_url=uploaded.url;payload.storage_path=uploaded.path;}
     if(existing){
-      const {error}=await sb.from('portfolio_works').update(payload).eq('id',existing.id);
+      const {error}=await sb.from('monthly_portfolio_works').update(payload).eq('id',existing.id);
       if(error) throw error;
-      if(uploaded && existing.storage_path) await sb.storage.from('portfolio').remove([existing.storage_path]);
+      if(uploaded && existing.storage_path) await sb.storage.from('monthly-portfolio').remove([existing.storage_path]);
     }else{
       payload.image_url=uploaded.url; payload.storage_path=uploaded.path;
       const minOrder=works.length?Math.min(...works.map((w,i)=>Number.isFinite(w.sort_order)?w.sort_order:i)):0;
       payload.sort_order=works.length?minOrder-1:0;
-      const {error}=await sb.from('portfolio_works').insert(payload);
+      const {error}=await sb.from('monthly_portfolio_works').insert(payload);
       if(error) throw error;
     }
     setTextStatus('formStatus',existing?'更新しました。':'追加しました。','ok');
     resetForm();
     await fetchWorks();
   }catch(err){
-    if(uploaded?.path) await sb.storage.from('portfolio').remove([uploaded.path]);
+    if(uploaded?.path) await sb.storage.from('monthly-portfolio').remove([uploaded.path]);
     console.error(err); setTextStatus('formStatus','保存に失敗しました：'+(err.message||err),'error');
   }finally{setBusy(false);}
 });
@@ -622,7 +622,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 function startRealtime(){
   if(!configured||realtimeChannel) return;
   realtimeChannel=sb.channel('portfolio-works-live')
-    .on('postgres_changes',{event:'*',schema:'public',table:'portfolio_works'},()=>fetchWorks())
+    .on('postgres_changes',{event:'*',schema:'public',table:'monthly_portfolio_works'},()=>fetchWorks())
     .subscribe();
 }
 
